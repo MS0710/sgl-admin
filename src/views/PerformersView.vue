@@ -1,30 +1,52 @@
 <template>
   <AdminLayout>
-    <div class="header">
-      <h2 class="title">所有表演者</h2>
+    <div class="pageBody">
+      <div class="header">
+        <h2 class="title">所有表演者</h2>
 
-      <div class="tools">
-        <input v-model="q" placeholder="搜尋暱稱..." />
-        <button class="refresh" @click="load" :disabled="loading">
-          {{ loading ? '載入中…' : '重新整理' }}
-        </button>
+        <div class="tools">
+          <input v-model="q" placeholder="搜尋暱稱..." />
+          <button class="refresh" @click="load" :disabled="loading">
+            {{ loading ? '載入中…' : '重新整理' }}
+          </button>
+        </div>
       </div>
-    </div>
 
-    <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="error">{{ error }}</p>
 
-    <div v-if="!loading && filtered.length === 0" class="empty">
-      沒有資料
-    </div>
+      <div v-if="!loading && filtered.length === 0" class="empty">
+        沒有資料
+      </div>
 
-    <div class="grid">
-      <PerformerCard v-for="p in filtered" :key="p.user_uuid" :performer="p" />
+      <div class="grid">
+        <PerformerCard v-for="p in pagedPerformers" :key="p.user_uuid" :performer="p" />
+      </div>
+
+      <div v-if="!loading && totalPages > 1" class="paginationWrap">
+        <div class="paginationRow">
+          <button class="pageBtn" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">上一頁</button>
+
+          <button
+            v-for="(item, idx) in pageItems"
+            :key="`${item}-${idx}`"
+            class="pageBtn"
+            :class="{ active: item === currentPage, dots: item === '...'}"
+            :disabled="item === '...'"
+            @click="typeof item === 'number' && goToPage(item)"
+          >
+            {{ item }}
+          </button>
+
+          <button class="pageBtn" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">下一頁</button>
+        </div>
+        <div class="summary">第 {{ currentPage }} / {{ totalPages }} 頁，共 {{ filtered.length }} 筆</div>
+      </div>
     </div>
   </AdminLayout>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import PerformerCard from '../components/PerformerCard.vue'
 import { fetchPerformers } from '../services/api'
@@ -34,6 +56,8 @@ const loading = ref(false)
 const error = ref('')
 const performers = ref([])
 const q = ref('')
+const currentPage = ref(1)
+const PAGE_SIZE = 20
 
 const load = async () => {
   error.value = ''
@@ -41,6 +65,7 @@ const load = async () => {
   try {
     // 目前先用固定 token（你已驗證 OK）
     performers.value = await fetchPerformers(BASIC_TOKEN)
+    currentPage.value = 1
   } catch (e) {
     error.value = String(e)
     console.error(e)
@@ -58,9 +83,58 @@ const filtered = computed(() => {
     String(p.nickname || '').toLowerCase().includes(keyword)
   )
 })
+
+watch(q, () => {
+  currentPage.value = 1
+})
+
+const totalPages = computed(() => {
+  const total = Math.ceil(filtered.value.length / PAGE_SIZE)
+  return total > 0 ? total : 1
+})
+
+const pagedPerformers = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return filtered.value.slice(start, start + PAGE_SIZE)
+})
+
+const pageItems = computed(() => {
+  const total = totalPages.value
+  const page = currentPage.value
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+
+  const items = [1]
+  const left = Math.max(2, page - 1)
+  const right = Math.min(total - 1, page + 1)
+
+  if (left > 2) items.push('...')
+  for (let p = left; p <= right; p += 1) items.push(p)
+  if (right < total - 1) items.push('...')
+  items.push(total)
+
+  return items
+})
+
+const goToPage = (page) => {
+  if (page < 1) {
+    currentPage.value = 1
+    return
+  }
+  if (page > totalPages.value) {
+    currentPage.value = totalPages.value
+    return
+  }
+  currentPage.value = page
+}
 </script>
 
 <style scoped>
+.pageBody {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -122,6 +196,57 @@ input:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.paginationWrap {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.paginationRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pageBtn {
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 10px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: #AE1914;
+}
+
+.pageBtn.active {
+  border-color: #AE1914;
+  background: #AE1914;
+  color: #fff;
+}
+
+.pageBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pageBtn.dots {
+  border-style: dashed;
+}
+
+.summary {
+  text-align: center;
+  opacity: 0.72;
+  font-size: 13px;
 }
 
 @media (max-width: 900px) {

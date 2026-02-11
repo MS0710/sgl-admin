@@ -16,6 +16,14 @@
 
         <button
           class="navBtn"
+          :class="{ active: $route.path.startsWith('/tags') }"
+          @click="$router.push('/tags')"
+        >
+          tag管理
+        </button>
+
+        <button
+          class="navBtn"
           :class="{ active: $route.path.startsWith('/invitation-codes/company') }"
           @click="$router.push('/invitation-codes/company')"
         >

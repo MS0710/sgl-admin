@@ -17,6 +17,12 @@
         <div class="tag">內容維護</div>
       </div>
 
+      <div class="job" @click="$router.push('/tags')">
+        <div class="jobTitle">tag管理</div>
+        <div class="jobDesc">檢視 tag 清單，依分類/狀態快速搜尋與篩選。</div>
+        <div class="tag">內容維護</div>
+      </div>
+
       <div class="job" @click="$router.push('/invitation-codes/company')">
         <div class="jobTitle">公司邀請碼</div>
         <div class="jobDesc">批次產生公司邀請碼，提供給合作方或內部同仁使用。</div>
