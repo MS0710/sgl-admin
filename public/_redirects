@@ -1,0 +1,2 @@
+/api/*  https://api-dev.sgl.com.tw/:splat  200
+/*      /index.html                        200
