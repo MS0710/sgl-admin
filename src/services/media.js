@@ -9,14 +9,14 @@ async function readJsonOrText(res) {
   }
 }
 
-export async function uploadImage(bearerToken, file) {
+export async function uploadImage(basicToken, file) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await fetch('/api/v1/media/image', {
+  const res = await fetch('/api/v1/admin/media/image', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${bearerToken}`,
+      Authorization: `Basic ${basicToken}`,
       Accept: 'application/json',
     },
     body: formData,
