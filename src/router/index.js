@@ -6,6 +6,7 @@ import { isAuthed } from '../services/auth'
 import SpecialtiesView from '../views/SpecialtiesView.vue'
 import CompanyInvitationCodesView from '../views/CompanyInvitationCodesView.vue'
 import TagsView from '../views/TagsView.vue'
+import BannersView from '../views/BannersView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,10 +14,11 @@ const router = createRouter({
     { path: '/login', name: 'login', component: LoginView },
     { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },
     { path: '/performers', name: 'performers', component: PerformersView, meta: { requiresAuth: true } },
-    { path: '/:pathMatch(.*)*', redirect: '/' },
     { path: '/specialties', name: 'specialties', component: SpecialtiesView, meta: { requiresAuth: true } },
     { path: '/tags', name: 'tags', component: TagsView, meta: { requiresAuth: true } },
+    { path: '/banners', name: 'banners', component: BannersView, meta: { requiresAuth: true } },
     { path: '/invitation-codes/company', name: 'company_invitation_codes', component: CompanyInvitationCodesView, meta: { requiresAuth: true } },
+    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
 

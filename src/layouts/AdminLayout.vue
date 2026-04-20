@@ -24,6 +24,14 @@
 
         <button
           class="navBtn"
+          :class="{ active: $route.path.startsWith('/banners') }"
+          @click="$router.push('/banners')"
+        >
+          廣告管理
+        </button>
+
+        <button
+          class="navBtn"
           :class="{ active: $route.path.startsWith('/invitation-codes/company') }"
           @click="$router.push('/invitation-codes/company')"
         >
