@@ -7,6 +7,7 @@ import SpecialtiesView from '../views/SpecialtiesView.vue'
 import CompanyInvitationCodesView from '../views/CompanyInvitationCodesView.vue'
 import TagsView from '../views/TagsView.vue'
 import BannersView from '../views/BannersView.vue'
+import SystemMaintenanceView from '../views/SystemMaintenanceView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +18,7 @@ const router = createRouter({
     { path: '/specialties', name: 'specialties', component: SpecialtiesView, meta: { requiresAuth: true } },
     { path: '/tags', name: 'tags', component: TagsView, meta: { requiresAuth: true } },
     { path: '/banners', name: 'banners', component: BannersView, meta: { requiresAuth: true } },
+    { path: '/system/maintenance', name: 'system_maintenance', component: SystemMaintenanceView, meta: { requiresAuth: true } },
     { path: '/invitation-codes/company', name: 'company_invitation_codes', component: CompanyInvitationCodesView, meta: { requiresAuth: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

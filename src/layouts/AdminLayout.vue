@@ -37,6 +37,14 @@
         >
           公司邀請碼
         </button>
+
+        <button
+          class="navBtn"
+          :class="{ active: $route.path.startsWith('/system/maintenance') }"
+          @click="$router.push('/system/maintenance')"
+        >
+          系統維護
+        </button>
       </nav>
 
       
@@ -70,7 +78,7 @@ const doLogout = () => {
 }
 
 .topbar {
-  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -90,6 +98,7 @@ const doLogout = () => {
 
 .nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   flex: 1;
 }

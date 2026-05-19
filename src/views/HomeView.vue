@@ -34,6 +34,12 @@
         <div class="jobDesc">批次產生公司邀請碼，提供給合作方或內部同仁使用。</div>
         <div class="tag">帳號開通</div>
       </div>
+
+      <div class="job" @click="$router.push('/system/maintenance')">
+        <div class="jobTitle">系統維護</div>
+        <div class="jobDesc">查看與更新維護模式、登入限制、下單限制與維護訊息。</div>
+        <div class="tag">系統設定</div>
+      </div>
     </div>
   </AdminLayout>
 </template>
