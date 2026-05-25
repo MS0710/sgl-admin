@@ -5,9 +5,13 @@
         <h2 class="title">所有表演者</h2>
 
         <div class="tools">
-          <input v-model="q" placeholder="搜尋暱稱..." />
+          <input v-model="q" placeholder="搜尋本頁暱稱或 UUID" />
+          <select v-model="activeStatus" :disabled="loading">
+            <option value="">全部狀態</option>
+            <option v-for="status in STATUS_OPTIONS" :key="status" :value="status">{{ status }}</option>
+          </select>
           <button class="refresh" @click="load" :disabled="loading">
-            {{ loading ? '載入中…' : '重新整理' }}
+            {{ loading ? '載入中...' : '重新整理' }}
           </button>
         </div>
       </div>
@@ -19,7 +23,15 @@
       </div>
 
       <div class="grid">
-        <PerformerCard v-for="p in pagedPerformers" :key="p.user_uuid" :performer="p" />
+        <PerformerCard
+          v-for="p in filtered"
+          :key="p.user_uuid"
+          :performer="p"
+          :statuses="STATUS_OPTIONS"
+          :updating="updatingUuid === p.user_uuid"
+          @view-profile="openProfile"
+          @change-status="changeStatus"
+        />
       </div>
 
       <div v-if="!loading && totalPages > 1" class="paginationWrap">
@@ -39,33 +51,45 @@
 
           <button class="pageBtn" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">下一頁</button>
         </div>
-        <div class="summary">第 {{ currentPage }} / {{ totalPages }} 頁，共 {{ filtered.length }} 筆</div>
+        <div class="summary">第 {{ currentPage }} / {{ totalPages }} 頁，共 {{ totalCount }} 筆</div>
       </div>
+
     </div>
   </AdminLayout>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import PerformerCard from '../components/PerformerCard.vue'
-import { fetchPerformers } from '../services/api'
+import { fetchPerformers, updatePerformerStatus } from '../services/api'
 import { BASIC_TOKEN } from '../services/auth'
+
+const STATUS_OPTIONS = ['ACTIVE', 'PENDING', 'REJECTED', 'UNPUBLISHED', 'DELETED']
+const PAGE_SIZE = 25
 
 const loading = ref(false)
 const error = ref('')
 const performers = ref([])
 const q = ref('')
+const activeStatus = ref('')
 const currentPage = ref(1)
-const PAGE_SIZE = 20
+const totalCount = ref(0)
+const updatingUuid = ref('')
+const router = useRouter()
 
 const load = async () => {
   error.value = ''
   loading.value = true
   try {
-    // 目前先用固定 token（你已驗證 OK）
-    performers.value = await fetchPerformers(BASIC_TOKEN)
-    currentPage.value = 1
+    const data = await fetchPerformers(BASIC_TOKEN, {
+      pageNo: currentPage.value,
+      pageSize: PAGE_SIZE,
+      status: activeStatus.value,
+    })
+    performers.value = data.performers
+    totalCount.value = data.totalCount
   } catch (e) {
     error.value = String(e)
     console.error(e)
@@ -79,9 +103,15 @@ onMounted(load)
 const filtered = computed(() => {
   const keyword = q.value.trim().toLowerCase()
   if (!keyword) return performers.value
-  return performers.value.filter((p) =>
-    String(p.nickname || '').toLowerCase().includes(keyword)
-  )
+  return performers.value.filter((p) => {
+    const haystack = `${p.nickname ?? ''} ${p.user_uuid ?? ''}`.toLowerCase()
+    return haystack.includes(keyword)
+  })
+})
+
+watch(activeStatus, () => {
+  currentPage.value = 1
+  load()
 })
 
 watch(q, () => {
@@ -89,13 +119,8 @@ watch(q, () => {
 })
 
 const totalPages = computed(() => {
-  const total = Math.ceil(filtered.value.length / PAGE_SIZE)
+  const total = Math.ceil(totalCount.value / PAGE_SIZE)
   return total > 0 ? total : 1
-})
-
-const pagedPerformers = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filtered.value.slice(start, start + PAGE_SIZE)
 })
 
 const pageItems = computed(() => {
@@ -116,16 +141,31 @@ const pageItems = computed(() => {
 })
 
 const goToPage = (page) => {
-  if (page < 1) {
-    currentPage.value = 1
-    return
-  }
-  if (page > totalPages.value) {
-    currentPage.value = totalPages.value
-    return
-  }
-  currentPage.value = page
+  const nextPage = Math.min(Math.max(page, 1), totalPages.value)
+  if (nextPage === currentPage.value) return
+  currentPage.value = nextPage
+  load()
 }
+
+const openProfile = (performer) => {
+  router.push({ name: 'performer_detail', params: { userUuid: performer.user_uuid } })
+}
+
+const changeStatus = async (performer, status) => {
+  if (!status || status === performer.status) return
+  error.value = ''
+  updatingUuid.value = performer.user_uuid
+  try {
+    await updatePerformerStatus(BASIC_TOKEN, performer.user_uuid, status)
+    performer.status = status
+  } catch (e) {
+    error.value = String(e)
+    console.error(e)
+  } finally {
+    updatingUuid.value = ''
+  }
+}
+
 </script>
 
 <style scoped>
@@ -152,16 +192,22 @@ const goToPage = (page) => {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-input {
+input,
+select {
   border: 1px solid #ddd;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 10px 12px;
   outline: none;
+  background: #fff;
+  color: #111;
+  font: inherit;
 }
 
-input:focus {
+input:focus,
+select:focus {
   border-color: #AE1914;
   box-shadow: 0 0 0 3px rgba(174, 25, 20, 0.12);
 }
@@ -171,7 +217,7 @@ input:focus {
   background: #AE1914;
   color: #fff;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 700;
 }
@@ -199,7 +245,6 @@ input:focus {
 }
 
 .paginationWrap {
-  margin-top: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -218,7 +263,8 @@ input:focus {
 .pageBtn {
   border: 1px solid #ddd;
   background: #fff;
-  border-radius: 10px;
+  color: #111;
+  border-radius: 8px;
   padding: 7px 11px;
   cursor: pointer;
   font-weight: 700;
@@ -239,17 +285,24 @@ input:focus {
   cursor: not-allowed;
 }
 
-.pageBtn.dots {
-  border-style: dashed;
-}
-
 .summary {
-  text-align: center;
-  opacity: 0.72;
   font-size: 13px;
+  color: #555;
 }
 
-@media (max-width: 900px) {
-  .grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tools {
+    width: 100%;
+  }
+
+  input,
+  .tools select {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
 }
 </style>

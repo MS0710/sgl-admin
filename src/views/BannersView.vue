@@ -323,7 +323,7 @@ const CATEGORY_OPTIONS = [
   { value: 'hot_performer', label: '熱門表演者' },
   { value: 'performer', label: '表演者' },
   { value: 'group', label: '群組' },
-  { value: 'announcement', label: '公告' },
+  { value: 'announcement', label: '通告' },
 ]
 
 const loading = ref(false)

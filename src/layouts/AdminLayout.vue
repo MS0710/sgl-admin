@@ -32,6 +32,14 @@
 
         <button
           class="navBtn"
+          :class="{ active: $route.path.startsWith('/announcements') }"
+          @click="$router.push('/announcements')"
+        >
+          通告管理
+        </button>
+
+        <button
+          class="navBtn"
           :class="{ active: $route.path.startsWith('/invitation-codes/company') }"
           @click="$router.push('/invitation-codes/company')"
         >

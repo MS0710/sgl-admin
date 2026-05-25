@@ -16,39 +16,43 @@ function authHeaders(basicToken) {
   }
 }
 
-export async function fetchPerformers(basicToken, params = {}) {
+function jsonHeaders(basicToken) {
+  return {
+    ...authHeaders(basicToken),
+    'Content-Type': 'application/json',
+  }
+}
+
+export async function fetchAnnouncements(basicToken, params = {}) {
   const searchParams = new URLSearchParams()
   searchParams.set('page_no', String(params.pageNo ?? 1))
   searchParams.set('page_size', String(params.pageSize ?? 25))
   if (params.status) searchParams.set('status', params.status)
+  if (params.ownerUserUuid) searchParams.set('owner_user_uuid', params.ownerUserUuid)
 
-  const res = await fetch(`/api/v1/admin/performers?${searchParams.toString()}`, {
+  const res = await fetch(`/api/v1/admin/announcements?${searchParams.toString()}`, {
     method: 'GET',
     headers: authHeaders(basicToken),
   })
-
   const data = await readJsonOrText(res)
   return {
     totalCount: Number(data?.total_count ?? 0),
-    performers: Array.isArray(data?.performers) ? data.performers : [],
+    announcements: Array.isArray(data?.announcements) ? data.announcements : [],
   }
 }
 
-export async function fetchPerformerProfile(basicToken, userUuid) {
-  const res = await fetch(`/api/v1/admin/performers/user-uuid/${encodeURIComponent(userUuid)}`, {
+export async function fetchAnnouncementDetail(basicToken, uuid) {
+  const res = await fetch(`/api/v1/admin/announcements/uuid/${encodeURIComponent(uuid)}`, {
     method: 'GET',
     headers: authHeaders(basicToken),
   })
   return await readJsonOrText(res)
 }
 
-export async function updatePerformerStatus(basicToken, userUuid, status) {
-  const res = await fetch(`/api/v1/admin/performers/user-uuid/${encodeURIComponent(userUuid)}/status`, {
+export async function updateAnnouncementStatus(basicToken, uuid, status) {
+  const res = await fetch(`/api/v1/admin/announcements/uuid/${encodeURIComponent(uuid)}/status`, {
     method: 'PATCH',
-    headers: {
-      ...authHeaders(basicToken),
-      'Content-Type': 'application/json',
-    },
+    headers: jsonHeaders(basicToken),
     body: JSON.stringify({ status }),
   })
   return await readJsonOrText(res)

@@ -29,6 +29,12 @@
         <div class="tag">內容維護</div>
       </div>
 
+      <div class="job" @click="$router.push('/announcements')">
+        <div class="jobTitle">通告管理</div>
+        <div class="jobDesc">查詢通告清單、查看通告詳情並更新發布狀態。</div>
+        <div class="tag">內容維護</div>
+      </div>
+
       <div class="job" @click="$router.push('/invitation-codes/company')">
         <div class="jobTitle">公司邀請碼</div>
         <div class="jobDesc">批次產生公司邀請碼，提供給合作方或內部同仁使用。</div>
