@@ -99,7 +99,7 @@
 
         <label class="field">
           <span>跳轉連結</span>
-          <input v-model.trim="newForm.link_url" placeholder="/performers 或 https://..." />
+          <input v-model.trim="newForm.link_url" :placeholder="linkUrlPlaceholder(newForm)" />
         </label>
 
         <label class="field">
@@ -229,7 +229,7 @@
                   </div>
                 </div>
 
-                <input v-model.trim="editForm.link_url" placeholder="跳轉連結" />
+                <input v-model.trim="editForm.link_url" :placeholder="linkUrlPlaceholder(editForm)" />
                 <input v-model.number="editForm.sort_order" type="number" placeholder="排序權重" />
               </div>
             </td>
@@ -325,6 +325,15 @@ const CATEGORY_OPTIONS = [
   { value: 'group', label: '群組' },
   { value: 'announcement', label: '通告' },
 ]
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+const INTERNAL_LINK_TARGET_BY_CATEGORY = {
+  hot_performer: 'performer',
+  performer: 'performer',
+  group: 'group',
+  announcement: 'announcement',
+}
 
 const loading = ref(false)
 const creating = ref(false)
@@ -468,13 +477,40 @@ function toApiDateTime(value) {
   return `${withSeconds}+08:00`
 }
 
+function internalLinkTarget(category) {
+  return INTERNAL_LINK_TARGET_BY_CATEGORY[category] || 'performer'
+}
+
+function linkUrlPlaceholder(form) {
+  if (form.link_type === 'internal') {
+    return `UUID 或 sgl://${internalLinkTarget(form.category)}/{uuid}`
+  }
+  return 'https://example.com'
+}
+
+function isUrl(value) {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function normalizeLinkUrl(form) {
+  const value = form.link_url.trim()
+  if (!value || form.link_type !== 'internal') return value
+  if (UUID_PATTERN.test(value)) return `sgl://${internalLinkTarget(form.category)}/${value}`
+  return value
+}
+
 function buildPayload(form) {
   return {
     title: form.title.trim(),
     image_url: form.image_url.trim(),
     category: form.category,
     link_type: form.link_type,
-    link_url: form.link_url.trim(),
+    link_url: normalizeLinkUrl(form),
     sort_order: Number(form.sort_order ?? 0),
     status: form.status,
     start_at: toApiDateTime(form.start_at),
@@ -493,6 +529,11 @@ function validatePayload(payload, hasPendingImage = false) {
   if (!payload.expired_at) return '結束時間為必填'
   if (Number.isNaN(payload.sort_order)) return '排序權重必須是數字'
   if (Date.parse(payload.expired_at) <= Date.parse(payload.start_at)) return '結束時間必須晚於開始時間'
+  if (payload.link_url && !isUrl(payload.link_url)) {
+    return payload.link_type === 'internal'
+      ? '站內連結請填 UUID 或 sgl:// 開頭的 APP 內部連結'
+      : '外部連結請填完整 URL'
+  }
   return ''
 }
 
