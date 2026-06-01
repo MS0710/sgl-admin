@@ -97,6 +97,15 @@
           </select>
         </label>
 
+        <label v-if="shouldShowInternalLinkTarget(newForm)" class="field">
+          <span>站內連結目標 *</span>
+          <select v-model="newForm.link_target">
+            <option v-for="target in HOME_INTERNAL_LINK_TARGET_OPTIONS" :key="target.value" :value="target.value">
+              {{ target.label }}
+            </option>
+          </select>
+        </label>
+
         <label class="field">
           <span>跳轉連結</span>
           <input v-model.trim="newForm.link_url" :placeholder="linkUrlPlaceholder(newForm)" />
@@ -230,6 +239,11 @@
                 </div>
 
                 <input v-model.trim="editForm.link_url" :placeholder="linkUrlPlaceholder(editForm)" />
+                <select v-if="shouldShowInternalLinkTarget(editForm)" v-model="editForm.link_target">
+                  <option v-for="target in HOME_INTERNAL_LINK_TARGET_OPTIONS" :key="target.value" :value="target.value">
+                    {{ target.label }}
+                  </option>
+                </select>
                 <input v-model.number="editForm.sort_order" type="number" placeholder="排序權重" />
               </div>
             </td>
@@ -326,6 +340,11 @@ const CATEGORY_OPTIONS = [
   { value: 'announcement', label: '通告' },
 ]
 
+const HOME_INTERNAL_LINK_TARGET_OPTIONS = [
+  { value: 'performer', label: '表演者' },
+  { value: 'group', label: '團體' },
+]
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const INTERNAL_LINK_TARGET_BY_CATEGORY = {
@@ -357,6 +376,7 @@ const blankForm = () => ({
   image_url: '',
   category: 'home',
   link_type: 'internal',
+  link_target: 'performer',
   link_url: '',
   sort_order: 0,
   status: 'active',
@@ -481,9 +501,18 @@ function internalLinkTarget(category) {
   return INTERNAL_LINK_TARGET_BY_CATEGORY[category] || 'performer'
 }
 
+function shouldShowInternalLinkTarget(form) {
+  return form.category === 'home' && form.link_type === 'internal'
+}
+
+function resolveInternalLinkTarget(form) {
+  if (shouldShowInternalLinkTarget(form)) return form.link_target || 'performer'
+  return internalLinkTarget(form.category)
+}
+
 function linkUrlPlaceholder(form) {
   if (form.link_type === 'internal') {
-    return `UUID 或 sgl://${internalLinkTarget(form.category)}/{uuid}`
+    return `UUID 或 sgl://${resolveInternalLinkTarget(form)}/{uuid}`
   }
   return 'https://example.com'
 }
@@ -500,8 +529,14 @@ function isUrl(value) {
 function normalizeLinkUrl(form) {
   const value = form.link_url.trim()
   if (!value || form.link_type !== 'internal') return value
-  if (UUID_PATTERN.test(value)) return `sgl://${internalLinkTarget(form.category)}/${value}`
+  if (UUID_PATTERN.test(value)) return `sgl://${resolveInternalLinkTarget(form)}/${value}`
   return value
+}
+
+function linkTargetFromUrl(value) {
+  const match = String(value || '').match(/^sgl:\/\/([^/]+)/i)
+  const target = match?.[1]
+  return HOME_INTERNAL_LINK_TARGET_OPTIONS.some((option) => option.value === target) ? target : 'performer'
 }
 
 function buildPayload(form) {
@@ -599,6 +634,7 @@ const startEdit = (banner) => {
     image_url: banner.image_url || '',
     category: banner.category || 'home',
     link_type: banner.link_type || 'internal',
+    link_target: linkTargetFromUrl(banner.link_url),
     link_url: banner.link_url || '',
     sort_order: banner.sort_order ?? 0,
     status: banner.status || 'active',
