@@ -2,35 +2,32 @@
   <div class="wrap">
     <div class="card">
       <h1>後台登入</h1>
-      <p class="hint">請輸入密碼</p>
+      <p class="hint">請輸入帳號與密碼</p>
 
-      <input v-model="pwd" type="password" placeholder="Password" @keydown.enter="submit" />
+      <input v-model.trim="username" type="text" placeholder="帳號" autocomplete="username" @keydown.enter="submit" />
+      <input v-model="password" type="password" placeholder="密碼" autocomplete="current-password" @keydown.enter="submit" />
       <button @click="submit">進入</button>
 
       <p v-if="err" class="err">{{ err }}</p>
-
-      <details class="dev">
-        <summary>（測試用）顯示預設密碼</summary>
-        <code>U0dMOlRFU1QxMjM0</code>
-      </details>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { loginWithToken } from '../services/auth'
+import { loginWithCredentials } from '../services/auth'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const pwd = ref('') // 你要預填就改成：ref('U0dMOlRFU1QxMjM0')
+const username = ref('')
+const password = ref('')
 const err = ref('')
 
 const submit = () => {
   err.value = ''
-  const ok = loginWithToken(pwd.value.trim())
+  const ok = loginWithCredentials(username.value, password.value)
   if (!ok) {
-    err.value = '密碼錯誤'
+    err.value = '帳號或密碼錯誤'
     return
   }
   router.replace('/')
@@ -75,6 +72,10 @@ input {
   outline: none;
 }
 
+input + input {
+  margin-top: 10px;
+}
+
 input:focus {
   border-color: #AE1914;
   box-shadow: 0 0 0 3px rgba(174, 25, 20, 0.12);
@@ -98,16 +99,4 @@ button {
   font-weight: 700;
 }
 
-.dev {
-  margin-top: 14px;
-  opacity: 0.8;
-}
-
-code {
-  display: inline-block;
-  margin-top: 8px;
-  background: #f6f6f6;
-  padding: 6px 8px;
-  border-radius: 10px;
-}
 </style>

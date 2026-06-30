@@ -2,7 +2,7 @@ export async function onRequest(context) {
   const { request, params } = context;
 
   // 你的上游 API 網域
-  const upstream = "https://api-dev.sgl.com.tw";
+  const upstream = "https://api.sgl.com.tw";
 
   // /api/<...> 的 <...> 會落在 params.path
   const rest = (params.path || []).join("/");
